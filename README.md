@@ -28,5 +28,6 @@ Parameters: {"foo" => "bar", "hello" => "world"}
 ```
 
 ## Optional Values
-`ShowEmpty (bool)` will return an empty string, or not print to logger, if there are no parameters. Default is to false if struct arg is not passed.
-`ShowPassword (bool)` will show the `password` and `password_confirmation` parameters. Default is false if not explicitly passed(DO NOT RECOMMEND).
+- `ShowEmpty (bool)` will return an empty string, or not print to logger, if there are no parameters. Default is to false if struct arg is not passed.
+
+- `ShowPassword (bool)` will show the `password` and `password_confirmation` parameters. Default is false if not explicitly passed(DO NOT RECOMMEND).
