@@ -50,3 +50,20 @@ func (lp LogParams) parseParams() string {
 	}
 	return paramString
 }
+
+// parseQueryParams will parse query parameters in the URL.
+func (lp LogParams) parseQueryParams() string {
+	var paramString string
+
+	var paramCount = 0
+	for k := range lp.Request.URL.Query() {
+		paramCount += 1
+		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.URL.Query()[k][0])
+		if paramCount != len(lp.Request.URL.Query()) {
+			paramString += ", "
+		}
+	}
+
+	return paramString
+}
+

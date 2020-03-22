@@ -101,3 +101,48 @@ func TestToLoggerEmpty(t *testing.T) {
 		t.Errorf("Error POST to httptest server")
 	}
 }
+
+// Query parameters
+
+func TestParseQueryParamsToString(t *testing.T) {
+	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	_, err := http.Get(server.URL + "?foo=bar")
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseQueryParamsToLogger(t *testing.T) {
+	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	_, err := http.Get(server.URL + "?foo=bar")
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
