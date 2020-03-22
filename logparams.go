@@ -1,9 +1,12 @@
 package logparams
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // LogParams struct
