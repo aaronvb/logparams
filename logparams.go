@@ -84,22 +84,27 @@ func (lp LogParams) parseParams() string {
 	return ""
 }
 
+// parseFormParams will parse the form for values and return a string of parameters
+func (lp LogParams) parseFormParams() string {
 	var paramString string
+
 	err := lp.Request.ParseForm()
 	if err != nil {
 		return paramString
 	}
 
-	if len(lp.Request.PostForm) > 0 {
-		var paramCount = 0
-		for k, _ := range lp.Request.PostForm {
-			paramCount += 1
-			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.PostForm.Get(k))
-			if paramCount != len(lp.Request.PostForm) {
-				paramString += ", "
-			}
+	var paramCount = 0
+	for k := range lp.Request.PostForm {
+		if k == "password" || k == "password_confirmation" {
+			lp.Request.PostForm.Set(k, "[FILTERED]")
+		}
+		paramCount += 1
+		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.PostForm.Get(k))
+		if paramCount != len(lp.Request.PostForm) {
+			paramString += ", "
 		}
 	}
+
 	return paramString
 }
 
