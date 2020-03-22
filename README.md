@@ -1,5 +1,5 @@
 # aaronvb/logparams
-Package `aaronvb/logparams` implements an parameter output if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
+Package `aaronvb/logparams` implements a parameter output if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
 
 The output can be a string or printed directly to the logger.
 
