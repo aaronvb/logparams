@@ -10,9 +10,13 @@ import (
 )
 
 // LogParams struct
+// Request is the http request
+// HideEmpty will not log or return "" if param is empty.
+// FilterPassword will filter password parameters (default true).
 type LogParams struct {
-	Request   *http.Request
-	HideEmpty bool
+	Request      *http.Request
+	HideEmpty    bool
+	ShowPassword bool
 }
 
 // ToString will return a string of all parameters within the http request.
