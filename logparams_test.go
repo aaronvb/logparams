@@ -332,3 +332,31 @@ func TestJSONArrayPasswordIsFilteredByDefault(t *testing.T) {
 		t.Errorf("Error POST to httptest server")
 	}
 }
+
+func TestParseJSONBodyCreatesNewReqBuffer(t *testing.T) {
+	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+
+		lp = LogParams{Request: r}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`{"foo":"bar"}`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}

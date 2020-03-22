@@ -1,6 +1,7 @@
 package logparams
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -131,6 +132,7 @@ func (lp LogParams) parseJSONBody() string {
 	var resultArray []map[string]interface{}
 
 	body, _ := ioutil.ReadAll(lp.Request.Body)
+	lp.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	err := json.Unmarshal(body, &result)
 	if err != nil {
 		err := json.Unmarshal(body, &resultArray)
