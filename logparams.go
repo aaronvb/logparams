@@ -25,7 +25,7 @@ func (lp LogParams) ToString() string {
 		return ""
 	}
 
-	return fmt.Sprintf("Parameters: {%s}", lp.parseParams())
+	return fmt.Sprintf("Parameters: %s", lp.parseParams())
 }
 
 // ToLogger will log print all parameters within the http request.
@@ -34,7 +34,7 @@ func (lp LogParams) ToLogger(logger *log.Logger) {
 		return
 	}
 
-	logger.Printf("Parameters: {%s}", lp.parseParams())
+	logger.Printf("Parameters: %s", lp.parseParams())
 }
 
 // Helper methods
