@@ -30,7 +30,39 @@ func (lp LogParams) ToLogger(logger *log.Logger) {
 	logger.Printf("Parameters: {%s}", lp.parseParams())
 }
 
-// parseParams will parse the form for values and return a string of parameters
+// Helper methods
+
+// checkForFormParams checks for form params in the request.
+func (lp LogParams) checkForFormParams() bool {
+	err := lp.Request.ParseForm()
+	if err != nil {
+		return false
+	}
+
+	if len(lp.Request.PostForm) == 0 {
+		return false
+	}
+
+	return true
+}
+
+// checkForQueryParams checks for query params in the request.
+func (lp LogParams) checkForQueryParams() bool {
+	if len(lp.Request.URL.Query()) == 0 {
+		return false
+	}
+
+	return true
+}
+
+// checkForJSON checks for content-type application/json in the header.
+func (lp LogParams) checkForJSON() bool {
+	if lp.Request.Header.Get("Content-Type") != "application/json" {
+		return false
+	}
+
+	return true
+}
 
 // parseParams will check the type of param in the request and call the correct parser.
 func (lp LogParams) parseParams() string {
