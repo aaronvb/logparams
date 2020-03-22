@@ -37,7 +37,27 @@ func TestPostFormToStringIsEmpty(t *testing.T) {
 	expectedResults := ""
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		lp := LogParams{Request: r, HideEmpty: true}
+		lp := LogParams{Request: r, ShowEmpty: false}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := url.Values{}
+
+	_, err := http.PostForm(server.URL, params)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestPostFormToStringShowEmpty(t *testing.T) {
+	expectedResults := "Parameters: "
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: true}
 		if lp.ToString() != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
 		}
@@ -86,11 +106,35 @@ func TestPostFormToLoggerEmpty(t *testing.T) {
 	logger.SetOutput(&str)
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		lp := LogParams{Request: r, HideEmpty: true}
+		lp := LogParams{Request: r, ShowEmpty: false}
 		lp.ToLogger(&logger)
 		result := strings.TrimSuffix(str.String(), "\n")
 		if result != "" {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", result, "")
+		}
+	}))
+
+	defer server.Close()
+
+	params := url.Values{}
+
+	_, err := http.PostForm(server.URL, params)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestPostFormToLoggerShowEmpty(t *testing.T) {
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: true}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != "Parameters: " {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, "Parameters: ")
 		}
 	}))
 

@@ -16,13 +16,13 @@ import (
 // FilterPassword will filter password parameters (default true).
 type LogParams struct {
 	Request      *http.Request
-	HideEmpty    bool
+	ShowEmpty    bool
 	ShowPassword bool
 }
 
 // ToString will return a string of all parameters within the http request.
 func (lp LogParams) ToString() string {
-	if lp.HideEmpty == true && lp.parseParams() == "" {
+	if lp.ShowEmpty == false && lp.parseParams() == "" {
 		return ""
 	}
 
@@ -31,7 +31,7 @@ func (lp LogParams) ToString() string {
 
 // ToLogger will log print all parameters within the http request.
 func (lp LogParams) ToLogger(logger *log.Logger) {
-	if lp.HideEmpty == true && lp.parseParams() == "" {
+	if lp.ShowEmpty == false && lp.parseParams() == "" {
 		return
 	}
 
