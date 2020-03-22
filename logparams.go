@@ -124,3 +124,55 @@ func (lp LogParams) parseQueryParams() string {
 	return paramString
 }
 
+// parseJSONBody will parse the json in the body as parameters.
+func (lp LogParams) parseJSONBody() string {
+	var b []byte
+	var result map[string]interface{}
+	var resultArray []map[string]interface{}
+
+	body, _ := ioutil.ReadAll(lp.Request.Body)
+	err := json.Unmarshal(body, &result)
+	if err != nil {
+		err := json.Unmarshal(body, &resultArray)
+		if err != nil {
+			return ""
+		}
+	}
+
+	if len(result) != 0 {
+		if lp.ShowPassword == false {
+			if result["password"] != nil {
+				result["password"] = "[FILTERED]"
+			}
+			if result["password_confirmation"] != nil {
+				result["password_confirmation"] = "[FILTERED]"
+			}
+		}
+		b, err = json.Marshal(&result)
+		if err != nil {
+			return ""
+		}
+	} else if len(resultArray) != 0 {
+		if lp.ShowPassword == false {
+			for _, v := range resultArray {
+				if v["password"] != nil {
+					v["password"] = "[FILTERED]"
+				}
+				if v["password_confirmation"] != nil {
+					v["password_confirmation"] = "[FILTERED]"
+				}
+			}
+		}
+		b, err = json.Marshal(&resultArray)
+		if err != nil {
+			return ""
+		}
+	}
+
+	str := string(b)
+	str = strings.Replace(str, "\":\"", "\" => \"", -1)
+	str = strings.Replace(str, "\":{", "\" => {", -1)
+	str = strings.Replace(str, "\",\"", "\", \"", -1)
+	str = strings.Replace(str, "},{", "}, {", -1)
+	return fmt.Sprint(str)
+}
