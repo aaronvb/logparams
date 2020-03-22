@@ -10,7 +10,9 @@ import (
 	"testing"
 )
 
-func TestToString(t *testing.T) {
+// Post Form parameters
+
+func TestPostFormToString(t *testing.T) {
 	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -31,7 +33,7 @@ func TestToString(t *testing.T) {
 	}
 }
 
-func TestToStringIsEmpty(t *testing.T) {
+func TestPostFormToStringIsEmpty(t *testing.T) {
 	expectedResults := ""
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -51,7 +53,7 @@ func TestToStringIsEmpty(t *testing.T) {
 	}
 }
 
-func TestToLogger(t *testing.T) {
+func TestPostFormToLogger(t *testing.T) {
 	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
 
 	var str bytes.Buffer
@@ -78,7 +80,7 @@ func TestToLogger(t *testing.T) {
 	}
 }
 
-func TestToLoggerEmpty(t *testing.T) {
+func TestPostFormToLoggerEmpty(t *testing.T) {
 	var str bytes.Buffer
 	var logger = log.Logger{}
 	logger.SetOutput(&str)
