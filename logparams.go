@@ -31,7 +31,20 @@ func (lp LogParams) ToLogger(logger *log.Logger) {
 }
 
 // parseParams will parse the form for values and return a string of parameters
+
+// parseParams will check the type of param in the request and call the correct parser.
 func (lp LogParams) parseParams() string {
+	if lp.checkForFormParams() == true {
+		return fmt.Sprintf("{%s}", lp.parseFormParams())
+	} else if lp.checkForQueryParams() == true {
+		return fmt.Sprintf("{%s}", lp.parseQueryParams())
+	} else if lp.checkForJSON() == true {
+		return lp.parseJSONBody()
+	}
+
+	return ""
+}
+
 	var paramString string
 	err := lp.Request.ParseForm()
 	if err != nil {
