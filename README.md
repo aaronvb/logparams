@@ -1,3 +1,5 @@
+[![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/aaronvb/logparams) [![CircleCI](https://img.shields.io/circleci/build/github/aaronvb/logparams)](https://circleci.com/gh/aaronvb/logparams)
+
 # aaronvb/logparams
 Package `aaronvb/logparams` implements a parameter output if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
 
