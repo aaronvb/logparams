@@ -2,6 +2,8 @@ package logparams
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -312,6 +314,9 @@ func TestFormPasswordIsFilteredByDefault(t *testing.T) {
 		if result != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
 		}
+		if lp.Request.PostForm.Get("password") != "foo" {
+			t.Errorf("Expected attribute was incorrect, got %s, want: %s", lp.Request.PostForm.Get("password"), "foo")
+		}
 	}))
 
 	defer server.Close()
@@ -335,9 +340,20 @@ func TestJSONBodyPasswordIsFilteredByDefault(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		lp := LogParams{Request: r}
 		lp.ToLogger(&logger)
-		result := strings.TrimSuffix(str.String(), "\n")
-		if result != expectedResults {
-			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		logResult := strings.TrimSuffix(str.String(), "\n")
+		if logResult != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", logResult, expectedResults)
+		}
+
+		var actualResult map[string]interface{}
+		body, _ := ioutil.ReadAll(lp.Request.Body)
+		lp.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		err := json.Unmarshal(body, &actualResult)
+		if err != nil {
+			t.Error("Error parsing JSON body")
+		}
+		if actualResult["password"] != "foobar" {
+			t.Errorf("Expected attribute was incorrect, got %s, want: %s", actualResult["password"], "foobar")
 		}
 	}))
 
@@ -361,6 +377,19 @@ func TestJSONArrayPasswordIsFilteredByDefault(t *testing.T) {
 		lp := LogParams{Request: r}
 		if lp.ToString() != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+
+		var actualResultArray []map[string]interface{}
+		body, _ := ioutil.ReadAll(lp.Request.Body)
+		lp.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		err := json.Unmarshal(body, &actualResultArray)
+		if err != nil {
+			t.Error("Error parsing JSON body")
+		}
+		for _, v := range actualResultArray {
+			if v["password"] != "foobar" {
+				t.Errorf("Expected attribute was incorrect, got %s, want: %s", v["password"], "foobar")
+			}
 		}
 	}))
 

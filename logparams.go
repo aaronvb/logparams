@@ -97,10 +97,11 @@ func (lp LogParams) parseFormParams() string {
 	var paramCount = 0
 	for k := range lp.Request.PostForm {
 		if k == "password" || k == "password_confirmation" {
-			lp.Request.PostForm.Set(k, "[FILTERED]")
+			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, "[FILTERED]")
+		} else {
+			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.PostForm.Get(k))
 		}
-		paramCount += 1
-		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.PostForm.Get(k))
+		paramCount++
 		if paramCount != len(lp.Request.PostForm) {
 			paramString += ", "
 		}
@@ -115,7 +116,7 @@ func (lp LogParams) parseQueryParams() string {
 
 	var paramCount = 0
 	for k := range lp.Request.URL.Query() {
-		paramCount += 1
+		paramCount++
 		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.URL.Query()[k][0])
 		if paramCount != len(lp.Request.URL.Query()) {
 			paramString += ", "
