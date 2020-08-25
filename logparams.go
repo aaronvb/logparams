@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -65,11 +66,12 @@ func (lp LogParams) checkForQueryParams() bool {
 
 // checkForJSON checks for content-type application/json in the header.
 func (lp LogParams) checkForJSON() bool {
-	if lp.Request.Header.Get("Content-Type") != "application/json" {
-		return false
+	matched, _ := regexp.MatchString(`application\/json`, lp.Request.Header.Get("Content-Type"))
+	if matched {
+		return true
 	}
 
-	return true
+	return false
 }
 
 // parseParams will check the type of param in the request and call the correct parser.
