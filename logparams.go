@@ -23,7 +23,7 @@ type LogParams struct {
 
 // ToString will return a string of all parameters within the http request.
 func (lp LogParams) ToString() string {
-	if lp.ShowEmpty == false && lp.parseParams() == "" {
+	if !lp.ShowEmpty && lp.parseParams() == "" {
 		return ""
 	}
 
@@ -32,7 +32,7 @@ func (lp LogParams) ToString() string {
 
 // ToLogger will log print all parameters within the http request.
 func (lp LogParams) ToLogger(logger *log.Logger) {
-	if lp.ShowEmpty == false && lp.parseParams() == "" {
+	if !lp.ShowEmpty && lp.parseParams() == "" {
 		return
 	}
 
@@ -57,30 +57,22 @@ func (lp LogParams) checkForFormParams() bool {
 
 // checkForQueryParams checks for query params in the request.
 func (lp LogParams) checkForQueryParams() bool {
-	if len(lp.Request.URL.Query()) == 0 {
-		return false
-	}
-
-	return true
+	return len(lp.Request.URL.Query()) != 0
 }
 
 // checkForJSON checks for content-type application/json in the header.
 func (lp LogParams) checkForJSON() bool {
 	matched, _ := regexp.MatchString(`application\/json`, lp.Request.Header.Get("Content-Type"))
-	if matched {
-		return true
-	}
-
-	return false
+	return matched
 }
 
 // parseParams will check the type of param in the request and call the correct parser.
 func (lp LogParams) parseParams() string {
-	if lp.checkForFormParams() == true {
+	if lp.checkForFormParams() {
 		return fmt.Sprintf("{%s}", lp.parseFormParams())
-	} else if lp.checkForQueryParams() == true {
+	} else if lp.checkForQueryParams() {
 		return fmt.Sprintf("{%s}", lp.parseQueryParams())
-	} else if lp.checkForJSON() == true {
+	} else if lp.checkForJSON() {
 		return lp.parseJSONBody()
 	}
 
@@ -145,7 +137,7 @@ func (lp LogParams) parseJSONBody() string {
 	}
 
 	if len(result) != 0 {
-		if lp.ShowPassword == false {
+		if !lp.ShowPassword {
 			if result["password"] != nil {
 				result["password"] = "[FILTERED]"
 			}
@@ -158,7 +150,7 @@ func (lp LogParams) parseJSONBody() string {
 			return ""
 		}
 	} else if len(resultArray) != 0 {
-		if lp.ShowPassword == false {
+		if !lp.ShowPassword {
 			for _, v := range resultArray {
 				if v["password"] != nil {
 					v["password"] = "[FILTERED]"
