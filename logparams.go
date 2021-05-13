@@ -19,24 +19,41 @@ type LogParams struct {
 	Request      *http.Request
 	ShowEmpty    bool
 	ShowPassword bool
+	HidePrefix   bool
 }
 
 // ToString will return a string of all parameters within the http request.
 func (lp LogParams) ToString() string {
+	var str string
+
 	if !lp.ShowEmpty && lp.parseParams() == "" {
 		return ""
 	}
 
-	return fmt.Sprintf("Parameters: %s", lp.parseParams())
+	if lp.HidePrefix {
+		str = lp.parseParams()
+	} else {
+		str = fmt.Sprintf("Parameters: %s", lp.parseParams())
+	}
+
+	return str
 }
 
 // ToLogger will log print all parameters within the http request.
 func (lp LogParams) ToLogger(logger *log.Logger) {
+	var str string
+
 	if !lp.ShowEmpty && lp.parseParams() == "" {
 		return
 	}
 
-	logger.Printf("Parameters: %s", lp.parseParams())
+	if lp.HidePrefix {
+		str = lp.parseParams()
+	} else {
+		str = fmt.Sprintf("Parameters: %s", lp.parseParams())
+	}
+
+	logger.Printf(str)
 }
 
 // Helper methods

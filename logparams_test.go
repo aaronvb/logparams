@@ -75,6 +75,27 @@ func TestPostFormToStringShowEmpty(t *testing.T) {
 	}
 }
 
+func TestPostFormToStringHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := url.Values{}
+	params.Set("foo", "bar")
+
+	_, err := http.PostForm(server.URL, params)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestPostFormToLogger(t *testing.T) {
 	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
 
@@ -150,6 +171,33 @@ func TestPostFormToLoggerShowEmpty(t *testing.T) {
 	}
 }
 
+func TestPostFormToLoggerHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := url.Values{}
+	params.Set("foo", "bar")
+
+	_, err := http.PostForm(server.URL, params)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 // Query parameters
 
 func TestParseQueryParamsToString(t *testing.T) {
@@ -157,6 +205,24 @@ func TestParseQueryParamsToString(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		lp := LogParams{Request: r}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	_, err := http.Get(server.URL + "?foo=bar")
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseQueryParamsToStringHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
 		if lp.ToString() != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
 		}
@@ -179,6 +245,30 @@ func TestParseQueryParamsToLogger(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		lp := LogParams{Request: r}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	_, err := http.Get(server.URL + "?foo=bar")
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseQueryParamsToLoggerHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
 		lp.ToLogger(&logger)
 		result := strings.TrimSuffix(str.String(), "\n")
 		if result != expectedResults {
@@ -242,6 +332,29 @@ func TestParseJSONBodyToString(t *testing.T) {
 	}
 }
 
+func TestParseJSONBodyToStringHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`{"foo":"bar"}`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestParseJSONBodyToLogger(t *testing.T) {
 	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
 
@@ -251,6 +364,35 @@ func TestParseJSONBodyToLogger(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		lp := LogParams{Request: r}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`{"foo":"bar"}`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseJSONBodyToLoggerHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
 		lp.ToLogger(&logger)
 		result := strings.TrimSuffix(str.String(), "\n")
 		if result != expectedResults {
@@ -294,6 +436,29 @@ func TestParseJSONArrayBodyToString(t *testing.T) {
 	}
 }
 
+func TestParseJSONArrayBodyToStringHidePrefix(t *testing.T) {
+	expectedResults := "[{\"foo\" => \"bar\"}]"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`[{"foo":"bar"}]`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestParseJSONArrayBodyToLogger(t *testing.T) {
 	expectedResults := "Parameters: [{\"foo\" => \"bar\"}]"
 
@@ -303,6 +468,35 @@ func TestParseJSONArrayBodyToLogger(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		lp := LogParams{Request: r}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`[{"foo":"bar"}]`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseJSONArrayBodyToLoggerHidePrefix(t *testing.T) {
+	expectedResults := "[{\"foo\" => \"bar\"}]"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
 		lp.ToLogger(&logger)
 		result := strings.TrimSuffix(str.String(), "\n")
 		if result != expectedResults {
