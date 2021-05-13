@@ -1,7 +1,8 @@
-[![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/aaronvb/logparams) [![CircleCI](https://img.shields.io/circleci/build/github/aaronvb/logparams)](https://circleci.com/gh/aaronvb/logparams)
+# logparams
+[![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/aaronvb/logparams) 
+[![Workflow](https://img.shields.io/github/workflow/status/aaronvb/logparams/Go?label=build%2Ftests&style=flat)](https://github.com/aaronvb/logparams/actions/workflows/go.yml)
 
-# aaronvb/logparams
-Package `aaronvb/logparams` implements a parameter output if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
+This is a Go middleware log output that prints parameters if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
 
 The output can be a string or printed directly to the logger. Recommend using with middleware, see example below.
 
@@ -114,3 +115,5 @@ INFO	2020/03/22 11:15:18 Parameters: {"foo" => "bar"}
 - `ShowEmpty (bool)` will return an empty string, or not print to logger, if there are no parameters. Default is to false if struct arg is not passed.
 
 - `ShowPassword (bool)` will show the `password` and `password_confirmation` parameters. Default is false if not explicitly passed(DO NOT RECOMMEND).
+
+- `HidePrefix (bool)` will hide the `Parameters: ` prefix in the output. Default is to false if struct arg is not passed.
