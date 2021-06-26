@@ -11,7 +11,7 @@ The output can be a string or printed directly to the logger. Recommend using wi
 go get -u github.com/aaronvb/logparams
 ```
 
-## Example
+## Usage
 Using logger:
 ```go
 var logger log.Logger{}
@@ -29,6 +29,21 @@ Result:
 ```sh
 Parameters: {"foo" => "bar", "hello" => "world"}
 ```
+
+Returning data in struct:
+```go
+lp := logparams.LogParams{Request: r}
+lp.ToFields()
+```
+```go
+type Fields struct {
+	Form      map[string]string
+	Query     map[string]string
+	Json      map[string]interface{}
+	JsonArray []map[string]interface{}
+}
+```
+
 
 ## Middleware Example (using [gorilla/mux](https://github.com/gorilla/mux))
 ```go
