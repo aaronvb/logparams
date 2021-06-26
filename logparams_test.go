@@ -35,6 +35,27 @@ func TestPostFormToString(t *testing.T) {
 	}
 }
 
+func TestPostFormToField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		result := lp.ToFields().Form["foo"]
+		expected := "bar"
+		if lp.ToFields().Form["foo"] != "bar" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expected)
+		}
+	}))
+
+	defer server.Close()
+
+	params := url.Values{}
+	params.Set("foo", "bar")
+
+	_, err := http.PostForm(server.URL, params)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestPostFormToStringIsEmpty(t *testing.T) {
 	expectedResults := ""
 
@@ -218,6 +239,24 @@ func TestParseQueryParamsToString(t *testing.T) {
 	}
 }
 
+func TestParseQueryParamsToField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		result := lp.ToFields().Query["foo"]
+		expected := "bar"
+		if result != expected {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expected)
+		}
+	}))
+
+	defer server.Close()
+
+	_, err := http.Get(server.URL + "?foo=bar")
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestParseQueryParamsToStringHidePrefix(t *testing.T) {
 	expectedResults := "{\"foo\" => \"bar\"}"
 
@@ -316,6 +355,29 @@ func TestParseJSONBodyToString(t *testing.T) {
 		lp := LogParams{Request: r}
 		if lp.ToString() != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`{"foo":"bar"}`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func TestParseJSONBodyToField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		result := lp.ToFields().Json["foo"]
+		expected := "bar"
+		if result != expected {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expected)
 		}
 	}))
 
@@ -436,6 +498,29 @@ func TestParseJSONArrayBodyToString(t *testing.T) {
 	}
 }
 
+func TestParseJSONArrayBodyToField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		result := lp.ToFields().JsonArray[0]["foo"]
+		expected := "bar"
+		if result != expected {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expected)
+		}
+	}))
+
+	defer server.Close()
+
+	var jsonStr = []byte(`[{"foo":"bar"}]`)
+	req, _ := http.NewRequest("POST", server.URL, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	_, err := client.Do(req)
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+}
+
 func TestParseJSONArrayBodyToStringHidePrefix(t *testing.T) {
 	expectedResults := "[{\"foo\" => \"bar\"}]"
 
@@ -534,6 +619,11 @@ func TestFormPasswordIsFilteredByDefault(t *testing.T) {
 		if lp.Request.PostForm.Get("password") != "foo" {
 			t.Errorf("Expected attribute was incorrect, got %s, want: %s", lp.Request.PostForm.Get("password"), "foo")
 		}
+
+		fields := lp.ToFields()
+		if fields.Form["password"] != "[FILTERED]" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", fields.Form["password"], "[FILTERED]")
+		}
 	}))
 
 	defer server.Close()
@@ -560,6 +650,11 @@ func TestJSONBodyPasswordIsFilteredByDefault(t *testing.T) {
 		logResult := strings.TrimSuffix(str.String(), "\n")
 		if logResult != expectedResults {
 			t.Errorf("Expected string was incorrect, got %s, want: %s", logResult, expectedResults)
+		}
+
+		fields := lp.ToFields()
+		if fields.Json["password"] != "[FILTERED]" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", fields.Form["password"], "[FILTERED]")
 		}
 
 		var actualResult map[string]interface{}
@@ -607,6 +702,11 @@ func TestJSONArrayPasswordIsFilteredByDefault(t *testing.T) {
 			if v["password"] != "foobar" {
 				t.Errorf("Expected attribute was incorrect, got %s, want: %s", v["password"], "foobar")
 			}
+		}
+
+		fields := lp.ToFields()
+		if fields.JsonArray[0]["password"] != "[FILTERED]" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", fields.Form["password"], "[FILTERED]")
 		}
 	}))
 

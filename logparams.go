@@ -22,44 +22,61 @@ type LogParams struct {
 	HidePrefix   bool
 }
 
-// ToString will return a string of all parameters within the http request.
-func (lp LogParams) ToString() string {
-	var str string
+type Fields struct {
+	Form      map[string]string
+	Query     map[string]string
+	Json      map[string]interface{}
+	JsonArray []map[string]interface{}
+}
 
-	if !lp.ShowEmpty && lp.parseParams() == "" {
+// ToString will return a string of all parameters within the http request.
+func (lp *LogParams) ToString() string {
+	paramsString, _ := lp.parseParams()
+	if !lp.ShowEmpty && paramsString == "" {
 		return ""
 	}
 
+	var str string
 	if lp.HidePrefix {
-		str = lp.parseParams()
+		str = paramsString
 	} else {
-		str = fmt.Sprintf("Parameters: %s", lp.parseParams())
+		str = fmt.Sprintf("Parameters: %s", paramsString)
 	}
 
 	return str
 }
 
 // ToLogger will log print all parameters within the http request.
-func (lp LogParams) ToLogger(logger *log.Logger) {
-	var str string
-
-	if !lp.ShowEmpty && lp.parseParams() == "" {
+func (lp *LogParams) ToLogger(logger *log.Logger) {
+	paramsString, _ := lp.parseParams()
+	if !lp.ShowEmpty && paramsString == "" {
 		return
 	}
 
+	var str string
 	if lp.HidePrefix {
-		str = lp.parseParams()
+		str = paramsString
 	} else {
-		str = fmt.Sprintf("Parameters: %s", lp.parseParams())
+		str = fmt.Sprintf("Parameters: %s", paramsString)
 	}
 
 	logger.Printf(str)
 }
 
+// ToLogger will log print all parameters within the http request.
+func (lp *LogParams) ToFields() Fields {
+	paramsString, fields := lp.parseParams()
+	if !lp.ShowEmpty && paramsString == "" {
+		return Fields{}
+	}
+
+	return fields
+}
+
 // Helper methods
 
 // checkForFormParams checks for form params in the request.
-func (lp LogParams) checkForFormParams() bool {
+func (lp *LogParams) checkForFormParams() bool {
 	err := lp.Request.ParseForm()
 	if err != nil {
 		return false
@@ -73,44 +90,53 @@ func (lp LogParams) checkForFormParams() bool {
 }
 
 // checkForQueryParams checks for query params in the request.
-func (lp LogParams) checkForQueryParams() bool {
+func (lp *LogParams) checkForQueryParams() bool {
 	return len(lp.Request.URL.Query()) != 0
 }
 
 // checkForJSON checks for content-type application/json in the header.
-func (lp LogParams) checkForJSON() bool {
+func (lp *LogParams) checkForJSON() bool {
 	matched, _ := regexp.MatchString(`application\/json`, lp.Request.Header.Get("Content-Type"))
 	return matched
 }
 
 // parseParams will check the type of param in the request and call the correct parser.
-func (lp LogParams) parseParams() string {
+func (lp *LogParams) parseParams() (string, Fields) {
 	if lp.checkForFormParams() {
-		return fmt.Sprintf("{%s}", lp.parseFormParams())
+		str, fields := lp.parseFormParams()
+		str = fmt.Sprintf("{%s}", str)
+		return str, fields
 	} else if lp.checkForQueryParams() {
-		return fmt.Sprintf("{%s}", lp.parseQueryParams())
+		str, fields := lp.parseQueryParams()
+		str = fmt.Sprintf("{%s}", str)
+		return str, fields
 	} else if lp.checkForJSON() {
-		return lp.parseJSONBody()
+		str, fields := lp.parseJSONBody()
+		return str, fields
 	}
 
-	return ""
+	return "", Fields{}
 }
 
 // parseFormParams will parse the form for values and return a string of parameters
-func (lp LogParams) parseFormParams() string {
+func (lp *LogParams) parseFormParams() (string, Fields) {
 	var paramString string
 
 	err := lp.Request.ParseForm()
 	if err != nil {
-		return paramString
+		return paramString, Fields{}
 	}
 
 	var paramCount = 0
+	formFields := Fields{Form: make(map[string]string, len(lp.Request.PostForm))}
 	for k := range lp.Request.PostForm {
 		if k == "password" || k == "password_confirmation" {
+			formFields.Form[k] = "[FILTERED]"
 			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, "[FILTERED]")
 		} else {
-			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.PostForm.Get(k))
+			formValue := lp.Request.PostForm.Get(k)
+			formFields.Form[k] = formValue
+			paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, formValue)
 		}
 		paramCount++
 		if paramCount != len(lp.Request.PostForm) {
@@ -118,28 +144,30 @@ func (lp LogParams) parseFormParams() string {
 		}
 	}
 
-	return paramString
+	return paramString, formFields
 }
 
 // parseQueryParams will parse query parameters in the URL.
-func (lp LogParams) parseQueryParams() string {
+func (lp *LogParams) parseQueryParams() (string, Fields) {
 	var paramString string
 
 	var paramCount = 0
+	formFields := Fields{Query: make(map[string]string, len(lp.Request.URL.Query()))}
 	for k := range lp.Request.URL.Query() {
+		paramValue := lp.Request.URL.Query()[k][0]
+		formFields.Query[k] = paramValue
+		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, paramValue)
 		paramCount++
-		paramString += fmt.Sprintf("\"%s\" => \"%s\"", k, lp.Request.URL.Query()[k][0])
 		if paramCount != len(lp.Request.URL.Query()) {
 			paramString += ", "
 		}
 	}
 
-	return paramString
+	return paramString, formFields
 }
 
 // parseJSONBody will parse the json in the body as parameters.
-func (lp LogParams) parseJSONBody() string {
-	var b []byte
+func (lp *LogParams) parseJSONBody() (string, Fields) {
 	var result map[string]interface{}
 	var resultArray []map[string]interface{}
 
@@ -149,10 +177,11 @@ func (lp LogParams) parseJSONBody() string {
 	if err != nil {
 		err := json.Unmarshal(body, &resultArray)
 		if err != nil {
-			return ""
+			return "", Fields{}
 		}
 	}
 
+	var b []byte
 	if len(result) != 0 {
 		if !lp.ShowPassword {
 			if result["password"] != nil {
@@ -164,7 +193,7 @@ func (lp LogParams) parseJSONBody() string {
 		}
 		b, err = json.Marshal(&result)
 		if err != nil {
-			return ""
+			return "", Fields{}
 		}
 	} else if len(resultArray) != 0 {
 		if !lp.ShowPassword {
@@ -179,7 +208,7 @@ func (lp LogParams) parseJSONBody() string {
 		}
 		b, err = json.Marshal(&resultArray)
 		if err != nil {
-			return ""
+			return "", Fields{}
 		}
 	}
 
@@ -188,5 +217,6 @@ func (lp LogParams) parseJSONBody() string {
 	str = strings.Replace(str, "\":{", "\" => {", -1)
 	str = strings.Replace(str, "\",\"", "\", \"", -1)
 	str = strings.Replace(str, "},{", "}, {", -1)
-	return fmt.Sprint(str)
+	fields := Fields{Json: result, JsonArray: resultArray}
+	return fmt.Sprint(str), fields
 }
