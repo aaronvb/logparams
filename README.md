@@ -36,7 +36,7 @@ lp := logparams.LogParams{Request: r}
 lp.ToFields()
 ```
 ```go
-type Fields struct {
+type ParamFields struct {
 	Form      map[string]string
 	Query     map[string]string
 	Json      map[string]interface{}
