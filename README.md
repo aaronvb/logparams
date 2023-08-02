@@ -1,6 +1,6 @@
 # logparams
 [![go.dev Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/aaronvb/logparams) 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/aaronvb/logparams/go.yml?label=tests)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/aaronvb/logparams/go.yml?label=tests)](https://github.com/aaronvb/logparams/actions/workflows/go.yml)
 
 This is a Go middleware log output that prints parameters if present in the HTTP request. Currently supports `PostForm`, `query params`, and `JSON` body.
 
