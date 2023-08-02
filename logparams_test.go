@@ -3,13 +3,16 @@ package logparams
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Post Form parameters
@@ -117,6 +120,89 @@ func TestPostFormToStringHidePrefix(t *testing.T) {
 	}
 }
 
+func TestPostMultipartFormToString(t *testing.T) {
+	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestPostMultipartFormToField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		result := lp.ToFields().Form["foo"]
+		expected := "bar"
+		if lp.ToFields().Form["foo"] != "bar" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expected)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestPostMultipartFormToStringIsEmpty(t *testing.T) {
+	expectedResults := "Parameters: {}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: false}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestPostMultipartFormToStringShowEmpty(t *testing.T) {
+	expectedResults := "Parameters: {}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: true}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestPostMultipartFormToStringHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		if lp.ToString() != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", lp.ToString(), expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
 func TestPostFormToLogger(t *testing.T) {
 	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
 
@@ -217,6 +303,92 @@ func TestPostFormToLoggerHidePrefix(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error POST to httptest server")
 	}
+}
+
+func TestMultipartPostFormToLogger(t *testing.T) {
+	expectedResults := "Parameters: {\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestMultipartPostFormToLoggerEmpty(t *testing.T) {
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: false}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != "Parameters: {}" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, "Parameters: {}")
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestMultipartPostFormToLoggerShowEmpty(t *testing.T) {
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, ShowEmpty: true}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != "Parameters: {}" {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, "Parameters: {}")
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	makeMultipartFormRequest(server.URL, params, t)
+}
+
+func TestMultipartPostFormToLoggerHidePrefix(t *testing.T) {
+	expectedResults := "{\"foo\" => \"bar\"}"
+
+	var str bytes.Buffer
+	var logger = log.Logger{}
+	logger.SetOutput(&str)
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		lp := LogParams{Request: r, HidePrefix: true}
+		lp.ToLogger(&logger)
+		result := strings.TrimSuffix(str.String(), "\n")
+		if result != expectedResults {
+			t.Errorf("Expected string was incorrect, got %s, want: %s", result, expectedResults)
+		}
+	}))
+
+	defer server.Close()
+
+	params := make(map[string]string)
+	params["foo"] = "bar"
+	makeMultipartFormRequest(server.URL, params, t)
 }
 
 // Query parameters
@@ -748,5 +920,37 @@ func TestParseJSONBodyCreatesNewReqBuffer(t *testing.T) {
 	_, err := client.Do(req)
 	if err != nil {
 		t.Errorf("Error POST to httptest server")
+	}
+}
+
+func makeMultipartFormRequest(url string, params map[string]string, t *testing.T) {
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	for k := range params {
+		fw, err := writer.CreateFormField(k)
+		if err != nil {
+			t.Errorf("Error POST to httptest server")
+		}
+
+		_, err = io.Copy(fw, strings.NewReader(params[k]))
+		if err != nil {
+			t.Errorf("Error POST to httptest server")
+		}
+	}
+
+	writer.Close()
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body.Bytes()))
+	if err != nil {
+		t.Errorf("Error POST to httptest server")
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rsp, _ := client.Do(req)
+	if rsp.StatusCode != http.StatusOK {
+		t.Errorf("Request failed with response code: %d", rsp.StatusCode)
 	}
 }

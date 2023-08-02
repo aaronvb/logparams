@@ -100,10 +100,16 @@ func (lp *LogParams) checkForJSON() bool {
 	return matched
 }
 
+// checkForJSON checks for content-type multipart/form-data in the header.
+func (lp *LogParams) checkForMultipartForm() bool {
+	matched, _ := regexp.MatchString(`multipart\/form-data`, lp.Request.Header.Get("Content-Type"))
+	return matched
+}
+
 // parseParams will check the type of param in the request and call the correct parser.
 func (lp *LogParams) parseParams() (string, ParamFields) {
 	if lp.checkForFormParams() {
-		str, fields := lp.parseFormParams()
+		str, fields := lp.parseFormParams(false)
 		str = fmt.Sprintf("{%s}", str)
 		return str, fields
 	} else if lp.checkForQueryParams() {
@@ -113,18 +119,29 @@ func (lp *LogParams) parseParams() (string, ParamFields) {
 	} else if lp.checkForJSON() {
 		str, fields := lp.parseJSONBody()
 		return str, fields
+	} else if lp.checkForMultipartForm() {
+		str, fields := lp.parseFormParams(true)
+		str = fmt.Sprintf("{%s}", str)
+		return str, fields
 	}
 
 	return "", ParamFields{}
 }
 
 // parseFormParams will parse the form for values and return a string of parameters
-func (lp *LogParams) parseFormParams() (string, ParamFields) {
+func (lp *LogParams) parseFormParams(multipart bool) (string, ParamFields) {
 	var paramString string
 
-	err := lp.Request.ParseForm()
-	if err != nil {
-		return paramString, ParamFields{}
+	if multipart {
+		err := lp.Request.ParseMultipartForm(32 << 20) // Max 32MB
+		if err != nil {
+			return paramString, ParamFields{}
+		}
+	} else {
+		err := lp.Request.ParseForm()
+		if err != nil {
+			return paramString, ParamFields{}
+		}
 	}
 
 	var paramCount = 0
